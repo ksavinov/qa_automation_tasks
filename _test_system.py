@@ -35,7 +35,11 @@ class NotEnoughRAMException(Exception):
     pass
 
 
-class NotSuchTestCaseID(Exception):
+class NoSuchTestCaseID(Exception):
+    pass
+
+
+class NoSuchTestCase(Exception):
     pass
 
 
@@ -55,17 +59,19 @@ class TestPrepFuncs:
 
 class TestCases:
     def __init__(self):
-        self.tc_id = {
-            1: "get_user_files",
-            2: "create_file_test"}
+        self.tc_ids = {
+            1: "files_list",
+            2: "random_file"}
+        self.tc_names = {"Список файлов": "files_list",
+                         "Случайный файл": "random_file"}
 
-    def get_user_files(self):
+    def files_list(self):
         logger.info("Run Test Case: get_user_files")
         user_home_dir = os.path.expanduser("~")
         home_dir_files = os.listdir(user_home_dir)
         print(home_dir_files)
 
-    def create_file_test(self):
+    def random_file(self):
         logger.info("Run Test Case: create_file_test")
         filename = "test"
         required_size = 1024 * 1024
@@ -94,15 +100,19 @@ class TestClass(TestPrepFuncs, TestCases, TestCleanUpFuncs):
 
     def run(self, name, tc_id):
         logger.info("TestClass.run called with params: name=%s, tc_id=%s", name, tc_id)
+        tc = TestCases()
         if name is not None:
-            getattr(TestCases, name)(self)
-        if tc_id is not None:
-            tc = TestCases()
             try:
-                case_name = tc.tc_id[tc_id]
+                case_name = tc.tc_names[name]
                 getattr(TestCases, case_name)(self)
             except KeyError:
-                raise NotSuchTestCaseID(tc_id)
+                raise NoSuchTestCase(name)
+        if tc_id is not None:
+            try:
+                case_func = tc.tc_ids[tc_id]
+                getattr(TestCases, case_func)(self)
+            except KeyError:
+                raise NoSuchTestCaseID(tc_id)
 
     def clean_up(self, clean_up_func=None):
         logger.info("TestClass.clean_up called with params: clean_up_func=%s", clean_up_func)
@@ -124,8 +134,11 @@ class TestClass(TestPrepFuncs, TestCases, TestCleanUpFuncs):
 
 if __name__ == "__main__":
     t = TestClass()
+    # run test by test case ID
     # t.execute(tc_id=1, prep="check_unix_time_odd")
     # t.execute(tc_id=2, prep="check_ram", clean_up="delete_file_test")
-    t.execute(name='get_user_files', prep="check_unix_time_odd")
-    t.execute(name='create_file_test', prep="check_ram",
+
+    # run test by test case name
+    t.execute(name="Список файлов", prep="check_unix_time_odd")
+    t.execute(name="Случайный файл", prep="check_ram",
               clean_up="delete_file_test")
